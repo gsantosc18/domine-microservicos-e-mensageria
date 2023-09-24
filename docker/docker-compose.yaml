@@ -1,0 +1,98 @@
+version: '3.3'
+
+services:
+
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - ./rabbitmq/data/:/var/lib/rabbitmq/mnesia/
+    networks:
+      - cursoms-network
+  
+  keyclock:
+    image: quay.io/keycloak/keycloak:22.0.3
+    command: start-dev
+    ports:
+      - 8081:8080
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+    networks:
+      - cursoms-network
+
+  eureka:
+    container_name: cursoms-eureka
+    build: 
+      context: ../eurekaserver
+      dockerfile: Dockerfile
+    ports:
+      - 8761:8761
+    networks:
+      - cursoms-network
+    depends_on:
+      - rabbitmq
+
+  cliente:
+    container_name: cursoms-cliente
+    build: 
+      context: ../msclientes
+      dockerfile: Dockerfile
+    environment:
+      - EUREKA_HOST=eureka
+    networks:
+      - cursoms-network
+    depends_on:
+      - eureka
+
+  cartao:
+    container_name: cursoms-cartao
+    build: 
+      context: ../mscartoes
+      dockerfile: Dockerfile
+    environment:
+      - EUREKA_HOST=eureka
+      - RABBITMQ_HOST=rabbitmq
+    networks:
+      - cursoms-network
+    depends_on:
+      - eureka
+
+  avaliadorcredito:
+    container_name: cursoms-avaliador-credito
+    build: 
+      context: ../msavaliadorcredito
+      dockerfile: Dockerfile
+    environment:
+      - EUREKA_HOST=eureka
+      - RABBITMQ_HOST=rabbitmq
+    networks:
+      - cursoms-network
+    depends_on:
+      - eureka
+  
+  gateway:
+    container_name: cursoms-gateway
+    build: 
+      context: ../msgateway
+      dockerfile: Dockerfile
+    environment:
+      - EUREKA_HOST=eureka
+      - KEYCLOCK_HOST=keyclock
+      - KEYCLOCK_PORT=8080
+    ports:
+      - 8080:8080
+    networks:
+      - cursoms-network
+    depends_on:
+      - eureka
+      - keyclock
+
+networks:
+  cursoms-network:
+    driver: bridge
+
+volumes:
+  rabbitmq_volume:

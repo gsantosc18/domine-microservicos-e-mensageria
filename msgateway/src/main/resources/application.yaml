@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: msgateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://${KEYCLOCK_HOST:localhost}:${KEYCLOCK_PORT:8081}/realms/mscursorealm
+
+server:
+  port: 8080
+
+eureka:
+  client:
+    fetch-registry: true
+    register-with-eureka: true
+    service-url:
+      defaultZone: http://${EUREKA_USER:cursoms-eureka-user}:${EUREKA_PASSWORD:Sv67L8usSiKhl0ek7Xjuq5o6}@${EUREKA_HOST:cursoms-network}:${EUREKA_PORT:8761}/eureka
+  instance:
+    instance-id: ${spring.application.name}:${server.port}
